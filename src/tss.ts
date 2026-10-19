@@ -17,22 +17,53 @@ const toInt = (v: string | number) => (typeof v === "string" ? parseInt(v, 16) :
 const isCoprocessor = (name: string) =>
   name.includes("Baseband") || (name.includes(",") && !name.startsWith("Ap,"));
 
-export function buildTssRequest(identity: Dict): Dict {
-  const chip = toInt(identity.ApChipID);
-  const nonceLen = chip >= 0x8020 ? 32 : 20; // A12+ use 32-byte ApNonce
+const ecidAndHeader = () => {
   // Random 52-bit ECID (fits in a JS safe integer: 20 high bits * 2^32 + 32 low bits).
   const rb = randomBytes(8);
-  const ecid = (rb.readUInt32BE(0) & 0xfffff) * 2 ** 32 + rb.readUInt32BE(4);
-
-  const req: Dict = {
+  return {
     "@HostPlatformInfo": "mac",
     "@VersionInfo": "libauthinstall-1033.0.2",
     "@UUID": randomUUID().toUpperCase(),
+    ApECID: (rb.readUInt32BE(0) & 0xfffff) * 2 ** 32 + rb.readUInt32BE(4),
+  };
+};
+
+/** 32-bit S5L87xx/89xx chips (iPod touch 2nd gen to A6X, 0x8720-0x8955) sign IMG3 firmware with an APTicket. */
+const isImg3 = (chip: number) => chip >= 0x8700 && chip < 0x8960;
+
+function img3Request(identity: Dict, chip: number): Dict {
+  const req: Dict = {
+    ...ecidAndHeader(),
+    "@APTicket": true,
+    ApBoardID: toInt(identity.ApBoardID),
+    ApChipID: chip,
+    ApSecurityDomain: toInt(identity.ApSecurityDomain ?? "0x01"),
+    ApNonce: randomBytes(20),
+    ApProductionMode: true,
+  };
+  if (identity.UniqueBuildID) req.UniqueBuildID = identity.UniqueBuildID;
+  for (const [name, comp] of Object.entries<Dict>(identity.Manifest ?? {})) {
+    if (isCoprocessor(name) || !("Digest" in comp || "PartialDigest" in comp)) continue;
+    const entry: Dict = {};
+    for (const k of ["Digest", "PartialDigest", "Trusted", "BuildString"]) if (k in comp) entry[k] = comp[k];
+    req[name] = entry;
+  }
+  return req;
+}
+
+export function buildTssRequest(identity: Dict): Dict {
+  const chip = toInt(identity.ApChipID);
+  if (isImg3(chip)) return img3Request(identity, chip);
+  // A12 and later (0x8020+) use a 32-byte ApNonce, except the A7 (0x8960), which answers STATUS=128
+  // to one and needs 20 bytes like the A8-A11.
+  const nonceLen = chip >= 0x8020 && chip !== 0x8960 ? 32 : 20;
+
+  const req: Dict = {
+    ...ecidAndHeader(),
     "@ApImg4Ticket": true,
     ApBoardID: toInt(identity.ApBoardID),
     ApChipID: chip,
     ApSecurityDomain: toInt(identity.ApSecurityDomain ?? "0x01"),
-    ApECID: ecid,
     ApNonce: randomBytes(nonceLen),
     SepNonce: randomBytes(20),
     ApProductionMode: true,

@@ -16,7 +16,8 @@ const LOCAL_SIG = 0x04034b50;
 /** A 32-bit field at this value means "see the ZIP64 extra field". */
 const ZIP64_SATURATED = 0xffffffff;
 
-async function range(url: string, spec: string): Promise<{ data: Buffer; total: number }> {
+/** One HTTP Range request (`spec` like "0-1023" or "-65558"); total file size from Content-Range. */
+export async function range(url: string, spec: string): Promise<{ data: Buffer; total: number }> {
   const r = await fetchRetry(url, { headers: { ...ua(), Range: `bytes=${spec}` } });
   if (r.status !== 206) throw new Error(`range request not honoured (HTTP ${r.status}) for ${url}`);
   const total = Number((r.headers.get("content-range") ?? "").split("/")[1]);

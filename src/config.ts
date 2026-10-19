@@ -74,6 +74,8 @@ export interface Config {
     /** Use AppleDB's device page for board and factory-build hints when Apple's sources have none (needs appledb.enabled). */
     appledb_hints: boolean;
     appledb_device_url: string;
+    /** AppleDB's device list, to find new devices before Apple's own lists have them. */
+    appledb_devices_url: string;
   };
   /**
    * Apple Tech Specs pages (support.apple.com): retail specs + product images per marketing name.
@@ -164,6 +166,7 @@ export const DEFAULTS: Config = {
     fallback_from: [["10.0", "14A403"], ["7.0", "11A465"]],
     appledb_hints: true,
     appledb_device_url: "https://appledb.dev/pageData/device/{id}.json",
+    appledb_devices_url: "https://api.appledb.dev/device/main.json",
   },
   techspecs: {
     enabled: false,

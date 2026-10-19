@@ -23,6 +23,8 @@ export interface IpswInfo {
   size?: number;
   /** SHA-1 of the whole file, when Apple's feed publishes it (FirmwareSHA1). */
   sha1?: string;
+  /** Encrypted OTA (.aea): the decryption key Apple's asset server returned with it. */
+  aeaKey?: string;
 }
 
 export const emptyInfo = (feed: string, build = "?", version = "?"): IpswInfo => ({

@@ -3,7 +3,8 @@
  *
  * Some devices (Apple TV 4K, ...) have no restore IPSW feed, but Apple's OTA server returns full
  * (non-delta) updates for them. Unencrypted .zip updates contain AssetData/boot/BuildManifest.plist,
- * which is all the TSS check needs. Encrypted .aea updates are skipped.
+ * which is all the TSS check needs. Encrypted .aea updates are read later, from the asset list that
+ * carries their keys (see inspectOtaUpdates in cli.ts).
  */
 import { Boards } from "./boards.js";
 import { CONFIG } from "./config.js";

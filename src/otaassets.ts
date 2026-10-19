@@ -54,6 +54,31 @@ const asset = (a: any, board: string, hint: OtaAsset["hint_source"]): OtaAsset |
   };
 };
 
+/** AppleDB identifiers not in `known`, for the families Apple's asset server covers. */
+export async function appledbNewDevices(known: Set<string>): Promise<string[]> {
+  if (!CONFIG.appledb.enabled || !CONFIG.ota_assets.appledb_hints) return [];
+  try {
+    const r = await fetchRetry(CONFIG.ota_assets.appledb_devices_url, { headers: ua() });
+    if (!r.ok) return [];
+    const list: any[] = await r.json();
+    // Only devices with a recent or upcoming release date: older ones Apple would already list, and
+    // undated entries are prototypes Apple's server never answers for.
+    const since = new Date(Date.now() - 365 * 86_400_000).toISOString().slice(0, 10);
+    const out = new Set<string>();
+    for (const d of list) {
+      const released = ([] as unknown[]).concat(d.released ?? []).filter((x): x is string => typeof x === "string").sort().at(-1);
+      if (!released || released < since) continue;
+      for (const id of d.identifier ?? []) {
+        if (typeof id === "string" && /^[A-Za-z]+\d+,\d+$/.test(id) && !known.has(id) && byPrefix(CONFIG.ota_assets.audiences, id)) out.add(id);
+      }
+    }
+    return [...out].sort();
+  } catch (e) {
+    console.error(`warning: AppleDB device list: ${errorMessage(e)}`);
+    return [];
+  }
+}
+
 /** AppleDB device page: boards + factory (preinstalled) builds. Hints only. */
 async function appledbHints(dev: string): Promise<{ boards: string[]; bases: [string, string][] }> {
   try {

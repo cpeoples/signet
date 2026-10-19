@@ -48,7 +48,7 @@
       <div class="sg-status__dl">
         <a class="sg-btn sg-btn--primary" href="{{ . }}" rel="noopener">
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M9.25 3h1.5v8.19l2.97-2.97 1.06 1.06L10 14.06 5.22 9.28l1.06-1.06 2.97 2.97zM4 15.5h12V17H4z" fill="currentColor"/></svg>
-          Download IPSW <span>{{ partial "signet/bytes.html" $l.size_bytes }}</span>
+          Download {{ if strings.HasSuffix . ".aea" }}OTA (.aea){{ else if strings.HasSuffix . ".zip" }}OTA{{ else }}IPSW{{ end }} <span>{{ partial "signet/bytes.html" $l.size_bytes }}</span>
         </a>
         <p class="sg-status__src">From <b>{{ (urls.Parse .).Host }}</b> (Apple). Signet never hosts files.</p>
         {{ with $l.sha1 }}<p class="sg-hash">{{ partial "signet/copy.html" (dict "value" . "label" "SHA-1" "show" true) }}</p>{{ end }}
@@ -77,7 +77,7 @@
           <tbody>
           {{- range . }}
             <tr class="sg-row--{{ .signing }}">
-              <td><b>{{ $d.os }} {{ .version }}</b> <span class="sg-mono sg-muted">{{ .build }}</span></td>
+              <td><b>{{ $d.os }} {{ .version }}</b> <span class="sg-mono sg-muted">{{ .build }}</span>{{ if not (strings.HasSuffix .url ".ipsw") }} <span class="sg-tag sg-tag--plain" title="Full over-the-air update: Apple ships no IPSW for this build">OTA</span>{{ end }}</td>
               <td class="sg-muted">{{ with .released }}{{ time.Format site.Params.dateFormat . }}{{ else }}-{{ end }}</td>
               <td>
                 {{- $tip := partial "signet/when.html" (dict "fw" . "os" $d.os "long" true) }}
@@ -89,7 +89,7 @@
                   </span>
                 </span>
               </td>
-              <td>{{ partial "signet/expires.html" (dict "fw" .) }}</td>
+              <td>{{ partial "signet/expires.html" (dict "fw" . "os" $d.os) }}</td>
               <td class="sg-r sg-mono">{{ partial "signet/bytes.html" .size_bytes }}</td>
               <td class="sg-r"><div class="sg-actions">
                 {{ with .sha1 }}{{ partial "signet/copy.html" (dict "value" . "label" "SHA-1") }}{{ end }}

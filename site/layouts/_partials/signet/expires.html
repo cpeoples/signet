@@ -1,4 +1,5 @@
-{{- /* Expires cell. Signed: gdmf.apple.com ExpirationDate. Unsigned: when Signet saw signing end. Args: "fw". */ -}}
+{{- /* Expires cell. Signed: gdmf.apple.com ExpirationDate. Unsigned: when Signet saw signing end, or
+       the range it must have ended in. Args: "fw", "os". */ -}}
 {{- $fw := .fw }}{{ $w := $fw.window | default dict -}}
 {{- $fmt := site.Params.dateFormat -}}
 {{- if and (eq $fw.signing "signed") $fw.mdm_expires -}}
@@ -19,7 +20,30 @@
     </span>
   </span>
 {{- else if eq $fw.signing "unsigned" -}}
-  <span class="sg-muted">Expired</span>
+  {{- /* Not observed: it ended between the replacing release (or this one's) and Signet's first check. */ -}}
+  {{- $next := $fw.replaced_by | default dict -}}
+  {{- $from := $next.released | default $fw.released | default "" -}}
+  {{- $to := $w.first_checked | default "" -}}
+  {{- if or $from $to -}}
+  <span class="sg-hastip sg-exp sg-exp--ended" tabindex="0">
+    {{- if and $from $to -}}
+      <time datetime="{{ $from }}">{{ time.Format $fmt $from }}</time> – <time datetime="{{ $to }}">{{ time.Format $fmt $to }}</time>
+    {{- else if $to -}}
+      Before <time datetime="{{ $to }}">{{ time.Format $fmt $to }}</time>
+    {{- else -}}
+      After <time datetime="{{ $from }}">{{ time.Format $fmt $from }}</time>
+    {{- end }}
+    <span class="sg-tip sg-tip--left" role="tooltip">
+      <span class="sg-tip__head">Ended before Signet checked</span>
+      <span class="sg-tip__body">Apple doesn't publish when it stops signing a build.
+        {{- if $next.version }} {{ $.os }} {{ $next.version }} replaced it{{ with $next.released }} on {{ time.Format $fmt . }}{{ end }}, and Apple usually stops signing the older build a week or two later.
+        {{- else if $fw.released }} It was released {{ time.Format $fmt $fw.released }}.{{ end }}
+        {{- with $to }} Signet's first check, {{ time.Format $fmt . }}, found it unsigned.{{ end }}</span>
+    </span>
+  </span>
+  {{- else -}}
+  <span class="sg-muted">Ended</span>
+  {{- end -}}
 {{- else -}}
   <span class="sg-muted">-</span>
 {{- end -}}

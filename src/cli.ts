@@ -24,7 +24,7 @@ import { collectIpsws, emptyInfo, type IpswInfo, type NameSource } from "./feeds
 import { History } from "./history.js";
 import { inspect, type Result } from "./inspect.js";
 import { discoverOta } from "./ota.js";
-import { listOtaAssets, type OtaAsset } from "./otaassets.js";
+import { appledbNewDevices, listOtaAssets, type OtaAsset } from "./otaassets.js";
 import { serve } from "./serve.js";
 import type { FirmwareSpecs } from "./specs.js";
 import { TechSpecsLookup, productTitle, summarize, type TechSpecs } from "./techspecs.js";
@@ -280,7 +280,7 @@ function otaOnlyDevices(known: Set<string>, withTss: boolean) {
     const cls = productClass(d.identifier) ?? null;
     const latest = {
       version: d.version, build: d.build, url: null,
-      ...(withTss && { signing: "unknown", tss_status: null, message: "no IPSW or unencrypted full OTA from Apple yet (only encrypted .aea updates); signing can't be checked" }),
+      ...(withTss && { signing: "unknown", tss_status: null, message: "no IPSW or full OTA update from Apple yet; signing can't be checked" }),
       dates: dates.lookup(d.build, [d.identifier]),
     };
     return {
@@ -421,7 +421,14 @@ async function main(): Promise<number> {
   if ((a["tech-specs"] || CONFIG.techspecs.enabled) && !a["no-tech-specs"]) await lookupTechSpecs(results);
   if (CONFIG.chip_images.enabled && !a["no-chip-images"]) await loadChipImages(results);
   if (a["no-dates"]) DATES = null;
-  if (CONFIG.ota_assets.enabled && !a["no-ota-assets"] && !a.url?.length) await loadOtaAssets(results, a.device, jobs);
+  if (CONFIG.ota_assets.enabled && !a["no-ota-assets"] && !a.url?.length) {
+    await loadOtaAssets(results, a.device, jobs);
+    const updates = await inspectOtaUpdates(results, jobs, wantTss);
+    if (updates.length) {
+      results.push(...updates);
+      mergeDeviceInfo(results, userNames);
+    }
+  }
   if (a.history && wantTss) {
     HISTORY = new History(a.history);
     const now = new Date().toISOString();
@@ -453,7 +460,7 @@ async function discoverIpsws(feed: string, device: string | undefined, useAppleD
     const { found, skippedEncrypted, noBoard, fromFirmware } = await discoverOta(DATES, have, device, firmwareFor);
     for (const [u, info] of found) if (!ipsws.has(u)) ipsws.set(u, info);
     console.error(`Apple OTA: ${found.size} full update(s) with a BuildManifest`
-      + (skippedEncrypted ? `, ${skippedEncrypted} encrypted (.aea) skipped` : "")
+      + (skippedEncrypted ? `, ${skippedEncrypted} encrypted (.aea) left for the asset step` : "")
       + (fromFirmware ? `, ${fromFirmware} board ID(s) read from firmware` : "")
       + (noBoard ? `, ${noBoard} device(s) with no known board ID` : ""));
   }
@@ -524,15 +531,58 @@ async function loadOtaAssets(results: Result[], device: string | undefined, jobs
   const devs = new Map<string, string | undefined>();
   for (const [p, info] of devicesIn(results)) if (!devs.get(p)) devs.set(p, info.board[p]);
   for (const d of DATES?.otaOnly(new Set(devs.keys())) ?? []) devs.set(d.identifier, undefined);
+  // Devices Apple's lists don't have yet, from AppleDB; kept below only if Apple's server answers.
+  const candidates = await appledbNewDevices(new Set(devs.keys()));
+  for (const id of candidates) devs.set(id, undefined);
   if (device) for (const k of devs.keys()) if (!k.includes(device)) devs.delete(k);
   const assets = await listOtaAssets(devs, jobs);
-  let total = 0, withAny = 0;
+  let total = 0, withAny = 0, discovered = 0;
   for (const [k, v] of assets) {
+    if (candidates.includes(k)) {
+      if (!v.length) continue;
+      discovered++;
+    }
     OTA_ASSETS.set(k, v);
     total += v.length;
     if (v.length) withAny++;
   }
-  console.error(`Apple OTA assets: ${total} update(s) for ${withAny}/${assets.size} device(s)`);
+  console.error(`Apple OTA assets: ${total} update(s) for ${withAny}/${assets.size} device(s)`
+    + (candidates.length ? `, ${discovered} new device(s) Apple answered for (of ${candidates.length} AppleDB candidates)` : ""));
+}
+
+/**
+ * Full OTA updates newer than any readable firmware for their device: encrypted (.aea) HomePod,
+ * Apple TV and Watch builds, and .zip updates for families the OTA feed step doesn't query.
+ */
+async function inspectOtaUpdates(results: Result[], jobs: number, wantTss: boolean): Promise<Result[]> {
+  const best = newestPerDevice(results);
+  const seen = new Set(results.map((r) => r.url));
+  const todo = new Map<string, IpswInfo>();
+  for (const [dev, assets] of OTA_ASSETS) {
+    const cur = best.get(dev);
+    for (const x of assets) {
+      if (x.type !== "full" || (x.encrypted && !x.decryption_key) || !x.version || seen.has(x.url)) continue;
+      if (cur && cmpVersion(x.version, cur.info.version) <= 0) continue;
+      const info = todo.get(x.url) ?? { ...emptyInfo("ota"), ...(x.encrypted && { aeaKey: x.decryption_key! }) };
+      info.board[dev] ??= x.board.toLowerCase();
+      todo.set(x.url, info);
+    }
+  }
+  if (!todo.size) return [];
+  // DeviceTrees sit further into the stream; read them only for devices no other firmware names.
+  const named = new Set<string>();
+  for (const [p, info] of devicesIn(results)) if (info.names[p]) named.add(p);
+  const needsNames = new Map<string, IpswInfo>(), rest = new Map<string, IpswInfo>();
+  for (const [u, info] of todo) (Object.keys(info.board).some((p) => !named.has(p)) ? needsNames : rest).set(u, info);
+  console.error(`Reading ${todo.size} OTA update(s) newer than any IPSW (BuildManifest${needsNames.size ? `, DeviceTree for ${needsNames.size}` : ""})...`);
+  const n = Math.min(jobs, 4);
+  const out = [
+    ...(rest.size ? await runParallel(rest, n, false, wantTss) : []),
+    ...(needsNames.size ? await runParallel(needsNames, n, true, wantTss) : []),
+  ];
+  // gdmf boards are per device; keep only those the manifest itself lists.
+  for (const { info } of out) for (const p of Object.keys(info.board)) if (!info.products.has(p)) delete info.board[p];
+  return out;
 }
 
 // Set exitCode rather than process.exit(): exit() can truncate large output written to a pipe.
