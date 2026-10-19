@@ -89,7 +89,7 @@ export class RemoteZip {
           let q = x + 4;
           if (usize === ZIP64_SATURATED) { usize = readU64(cd, q); q += 8; }
           if (csize === ZIP64_SATURATED) { csize = readU64(cd, q); q += 8; }
-          if (offset === ZIP64_SATURATED) { offset = readU64(cd, q); q += 8; }
+          if (offset === ZIP64_SATURATED) offset = readU64(cd, q);
         }
         x += 4 + len;
       }

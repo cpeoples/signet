@@ -193,7 +193,7 @@ export function loadConfig(path?: string): Config {
   try {
     user = JSON.parse(readFileSync(file, "utf8"));
   } catch (e) {
-    throw new Error(`can't read config ${file}: ${errorMessage(e)}`);
+    throw new Error(`can't read config ${file}: ${errorMessage(e)}`, { cause: e });
   }
   CONFIG = {
     ...DEFAULTS,

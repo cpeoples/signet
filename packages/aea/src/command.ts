@@ -62,7 +62,7 @@ function progress(quiet: boolean, verb: string) {
   const tty = !quiet && process.stderr.isTTY;
   let last = 0;
   return {
-    update(done: number, total: number) {
+    update: (done: number, total: number) => {
       const now = Date.now();
       if (!tty || now - last < 200) return;
       last = now;

@@ -129,7 +129,7 @@ function runPipeline(args: string[]): Promise<any> {
     child.on("error", reject);
     child.on("close", (code) => {
       if (code !== 0) return reject(new Error(`signet exited with ${code}`));
-      try { resolve(JSON.parse(Buffer.concat(chunks).toString("utf8"))); } catch (e) { reject(e); }
+      try { resolve(JSON.parse(Buffer.concat(chunks).toString("utf8"))); } catch (e) { reject(new Error("signet printed invalid JSON", { cause: e })); }
     });
   });
 }
@@ -192,5 +192,5 @@ export async function serve(argv: string[]) {
 
   await refresh();
   const minutes = Number(a.refresh);
-  if (minutes > 0) setInterval(refresh, minutes * 60_000);
+  if (minutes > 0) setInterval(() => void refresh(), minutes * 60_000); // refresh() logs its own errors
 }

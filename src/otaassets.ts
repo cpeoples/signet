@@ -59,7 +59,7 @@ async function appledbHints(dev: string): Promise<{ boards: string[]; bases: [st
   try {
     const r = await fetchRetry(CONFIG.ota_assets.appledb_device_url.replace("{id}", encodeURIComponent(dev)), { headers: ua() });
     if (!r.ok) return { boards: [], bases: [] };
-    const fm = (await r.json() as any).frontmatter ?? {};
+    const fm = (await r.json()).frontmatter ?? {};
     const boards: string[] = (fm.device ?? []).flatMap((d: any) => d.board ?? []);
     const bases: [string, string][] = (fm.versionArr ?? [])
       .filter((v: any) => (v.preinstalled ?? []).includes(dev) && v.version && v.build)

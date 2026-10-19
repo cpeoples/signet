@@ -13,6 +13,7 @@
   "scripts": {
     "build": "npm run build -w @chrispeoples/aea && tsc",
     "test": "npm test -w @chrispeoples/aea",
+    "lint": "eslint . --max-warnings 0 && tsc --noEmit && npm run typecheck -w @chrispeoples/aea",
     "start": "node dist/cli.js",
     "json": "npm run build --silent && node dist/cli.js --json --history signet-history.json > signet-report.json && echo 'Wrote signet-report.json (history: signet-history.json)'",
     "site:data": "npm run json",
@@ -28,7 +29,11 @@
     "plist": "^5.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^24.0.0",
-    "typescript": "^5.6.0"
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.71.2"
   }
 }
