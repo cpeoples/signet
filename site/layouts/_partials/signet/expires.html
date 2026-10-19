@@ -13,28 +13,24 @@
 {{- else if and (eq $fw.signing "unsigned") $w.unsigned_detected_at -}}
   {{- $ended := time.Format $fmt $w.unsigned_detected_at -}}
   <span class="sg-hastip sg-exp sg-exp--ended" tabindex="0">
-    Ended <time datetime="{{ $w.unsigned_detected_at }}">{{ $ended }}</time>
+    <span>Ended <time datetime="{{ $w.unsigned_detected_at }}">{{ $ended }}</time></span>
     <span class="sg-tip sg-tip--left" role="tooltip">
       <span class="sg-tip__head">Observed by Signet</span>
       <span class="sg-tip__body">Signed on {{ time.Format $fmt $w.last_seen_signed }}, unsigned on {{ $ended }}.</span>
     </span>
   </span>
 {{- else if eq $fw.signing "unsigned" -}}
-  {{- /* Not observed: it ended some time before Signet's first check. */ -}}
+  {{- /* Not observed: it ended some time before Signet's first check, so there's no date to show. */ -}}
   {{- $next := $fw.replaced_by | default dict -}}
-  {{- with $w.first_checked -}}
-  <span class="sg-hastip sg-exp sg-exp--ended" tabindex="0">
-    Before <time datetime="{{ . }}">{{ time.Format $fmt . }}</time>
+  <span class="sg-hastip sg-exp sg-muted" tabindex="0">
+    <span>-</span>
     <span class="sg-tip sg-tip--left" role="tooltip">
-      <span class="sg-tip__head">Ended before Signet checked</span>
+      <span class="sg-tip__head">Signing end date unknown</span>
       <span class="sg-tip__body">Apple doesn't publish when it stops signing a build.
         {{- if $next.version }} {{ $.os }} {{ $next.version }} replaced it{{ with $next.released }} on {{ time.Format $fmt . }}{{ end }}, and Apple usually stops signing the older build a week or two later.{{ end }}
-        Signet's first check, {{ time.Format $fmt . }}, found it unsigned.</span>
+        {{- with $w.first_checked }} Signet's first check, {{ time.Format $fmt . }}, found it unsigned.{{ end }}</span>
     </span>
   </span>
-  {{- else -}}
-  <span class="sg-muted">Ended</span>
-  {{- end -}}
 {{- else -}}
   <span class="sg-muted">-</span>
 {{- end -}}
