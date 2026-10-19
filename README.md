@@ -2,7 +2,7 @@
 
 Signet lists every Apple firmware, whether Apple still signs it, and where to download it, using only Apple's own servers.
 
-It reads Apple's firmware feeds, inspects each IPSW with HTTP range requests (no full downloads), and asks Apple's TSS server (`gs.apple.com`) whether each build can still be restored. The output is one JSON report, which is also the data source for a static website.
+It reads Apple's firmware feeds, inspects each IPSW with HTTP range requests (no full downloads), and asks Apple's TSS server (`gs.apple.com`) whether each build can still be restored. The output is one JSON report, which is also the data source for a static website: [cpeoples.github.io/signet](https://cpeoples.github.io/signet/).
 
 ## Contents
 
@@ -23,7 +23,7 @@ It reads Apple's firmware feeds, inspects each IPSW with HTTP range requests (no
 ## Quick start
 
 ```bash
-git clone --recurse-submodules <repo-url> signet
+git clone --recurse-submodules https://github.com/cpeoples/signet.git
 cd signet
 npm install
 
