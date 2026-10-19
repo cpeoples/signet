@@ -34,7 +34,7 @@ export async function withRetries<T>(attempt: () => Promise<T>): Promise<T> {
  */
 function describeError(e: unknown): string {
   if (!(e instanceof Error)) return String(e);
-  const c = e.cause as (Error & { code?: string; address?: string; port?: number; errors?: unknown[] }) | undefined;
+  const c = (e as { cause?: unknown }).cause as (Error & { code?: string; address?: string; port?: number; errors?: unknown[] }) | undefined;
   if (!(c instanceof Error)) return e.message;
   const one = (x: any) => x?.message || [x?.code, x?.address && `${x.address}${x.port ? `:${x.port}` : ""}`].filter(Boolean).join(" ");
   const parts = c.errors?.length ? c.errors.map(one) : [one(c)];
