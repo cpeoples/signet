@@ -13,6 +13,10 @@ export function pickIdentity(manifest: Dict): Dict | undefined {
 
 const toInt = (v: string | number) => (typeof v === "string" ? parseInt(v, 16) : v);
 
+/** Firmware for a chip other than the AP: Baseband, Cellular1,* (C1 modem), Wireless1,*, Timer,*. */
+const isCoprocessor = (name: string) =>
+  name.includes("Baseband") || (name.includes(",") && !name.startsWith("Ap,"));
+
 export function buildTssRequest(identity: Dict): Dict {
   const chip = toInt(identity.ApChipID);
   const nonceLen = chip >= 0x8020 ? 32 : 20; // A12+ use 32-byte ApNonce
@@ -38,9 +42,10 @@ export function buildTssRequest(identity: Dict): Dict {
   };
 
   for (const [name, comp] of Object.entries<Dict>(identity.Manifest ?? {})) {
-    // Only AP-signed components ("Trusted" key). Co-processor entries (Cryptex1, Savage,
-    // Yonkers, eUICC, SE, BMU, ...) need extra per-chip params and cause STATUS=8.
-    if (!("Digest" in comp) || !("Trusted" in comp) || name.includes("Baseband")) continue;
+    // Only AP-signed components ("Trusted" key). Other chips' entries need their own request
+    // fields: without them Cryptex1, Savage, Yonkers, ... get STATUS=8, and Cellular1,*,
+    // Wireless1,* and Timer,* get STATUS=94 even for signed builds.
+    if (!("Digest" in comp) || !("Trusted" in comp) || isCoprocessor(name)) continue;
     req[name] = { Digest: comp.Digest, Trusted: comp.Trusted, EPRO: true, ESEC: true };
   }
   return req;
