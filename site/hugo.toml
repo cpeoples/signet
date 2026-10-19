@@ -39,7 +39,7 @@ disableKinds = ["taxonomy", "term"]
 
   heroBackgroundLight = ""
   heroBackgroundDark  = ""
-  defaultMode     = "auto"
+  defaultMode     = "dark"
   showThemeToggle = true
   showSidebar     = false
   showToc         = false
