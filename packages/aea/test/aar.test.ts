@@ -37,7 +37,8 @@ function checkTree(dir: string, warnings: string[]) {
       assert.equal(g.sha256, want.sha256, `${want.path}: content`);
     }
     if (want.type === "L") assert.equal(g.link, want.link, `${want.path}: link target`);
-    if (!isWindows) assert.equal(g.mode, want.mode, `${want.path}: mode ${g.mode.toString(8)} != ${want.mode.toString(8)}`);
+    // Symlink modes aren't restored (Linux always reports 777) and aren't used for access checks.
+    if (!isWindows && want.type !== "L") assert.equal(g.mode, want.mode, `${want.path}: mode ${g.mode.toString(8)} != ${want.mode.toString(8)}`);
     if (want.type !== "L" || !isWindows) assert.equal(g.mtime, want.mtime, `${want.path}: mtime`);
   }
   const extra = Object.keys(got).filter((p) => !EXPECTED.tree.some((w) => w.path === p));
