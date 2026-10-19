@@ -10,7 +10,7 @@
  * Best effort: anything that doesn't match or parse is simply omitted.
  */
 import { CONFIG, ua } from "./config.js";
-import { fetchOk } from "./http.js";
+import { fetchOk } from "./retry.js";
 import { errorMessage, readCache, writeJson } from "./util.js";
 
 export interface TechSpecs {

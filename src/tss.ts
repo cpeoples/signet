@@ -2,7 +2,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import * as plist from "plist";
 import { CONFIG } from "./config.js";
-import { fetchRetry } from "./http.js";
+import { fetchRetry } from "./retry.js";
 
 type Dict = Record<string, any>;
 

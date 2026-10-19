@@ -10,7 +10,7 @@
 import { CONFIG, ua } from "./config.js";
 import type { DateIndex } from "./dates.js";
 import { emptyInfo, type IpswInfo } from "./feeds.js";
-import { fetchRetry } from "./http.js";
+import { fetchRetry } from "./retry.js";
 import { errorMessage } from "./util.js";
 
 /** Apple-hosted HTTPS URL whose path ends with `suffix` ("Restore.ipsw", ".zip"), else null. */

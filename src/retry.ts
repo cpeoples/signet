@@ -25,8 +25,20 @@ export async function withRetries<T>(attempt: () => Promise<T>): Promise<T> {
       last = e;
     }
   }
-  const msg = last instanceof Error ? (last.cause instanceof Error ? `${last.message}: ${last.cause.message}` : last.message) : String(last);
-  throw new Error(`${msg} (after ${tries} attempts)`);
+  throw new Error(`${describeError(last)} (after ${tries} attempts)`);
+}
+
+/**
+ * fetch() hides the reason in `cause`, sometimes as an AggregateError (one per address tried) with
+ * an empty message, so fall back to its code and the addresses.
+ */
+function describeError(e: unknown): string {
+  if (!(e instanceof Error)) return String(e);
+  const c = e.cause as (Error & { code?: string; address?: string; port?: number; errors?: unknown[] }) | undefined;
+  if (!(c instanceof Error)) return e.message;
+  const one = (x: any) => x?.message || [x?.code, x?.address && `${x.address}${x.port ? `:${x.port}` : ""}`].filter(Boolean).join(" ");
+  const parts = c.errors?.length ? c.errors.map(one) : [one(c)];
+  return `${e.message}: ${parts.filter(Boolean).join("; ") || c.name}`;
 }
 
 /** fetch() with a timeout, retried as in withRetries(). Other non-2xx responses are returned. */

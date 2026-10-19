@@ -4,7 +4,7 @@
  */
 import { inflateRawSync } from "node:zlib";
 import { ua } from "./config.js";
-import { fetchRetry } from "./http.js";
+import { fetchRetry } from "./retry.js";
 
 export interface ZipEntry { name: string; method: number; csize: number; usize: number; offset: number }
 

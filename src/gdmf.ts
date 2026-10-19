@@ -6,7 +6,7 @@
 import { X509Certificate } from "node:crypto";
 import tls from "node:tls";
 import { CONFIG } from "./config.js";
-import { fetchOk } from "./http.js";
+import { fetchOk } from "./retry.js";
 
 let trusted: Promise<void> | undefined;
 

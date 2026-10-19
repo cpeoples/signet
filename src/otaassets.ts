@@ -13,7 +13,7 @@
 import { Boards, otaBoard } from "./boards.js";
 import { CONFIG, ua } from "./config.js";
 import { softwareUpdates, trustAppleRoot } from "./gdmf.js";
-import { fetchRetry, HttpError } from "./http.js";
+import { fetchRetry, HttpError } from "./retry.js";
 import { byPrefix, errorMessage, pool } from "./util.js";
 
 /** Parallel asset queries, whatever --jobs says: gdmf is one server, not a CDN. */

@@ -8,7 +8,7 @@
  * shows another chip's photo.
  */
 import { CONFIG } from "./config.js";
-import { fetchRetry } from "./http.js";
+import { fetchRetry } from "./retry.js";
 
 export interface ChipImage {
   chip: string;

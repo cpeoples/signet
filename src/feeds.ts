@@ -1,7 +1,7 @@
 /** IPSW feeds (URLs come from config: iTunes and Finder version plist, mesu macOS IPSW feed, ...). */
 import * as plist from "plist";
 import { CONFIG, ua } from "./config.js";
-import { fetchOk } from "./http.js";
+import { fetchOk } from "./retry.js";
 import type { FirmwareSpecs } from "./specs.js";
 
 export type NameSource = "devicetree" | "user";
