@@ -1,0 +1,6 @@
+{{- /* Bytes as "12.3 GB", in decimal units like Finder. */ -}}
+{{- $b := . | default 0 | float -}}
+{{- if ge $b 1e9 -}}{{ printf "%.1f GB" (div $b 1e9) }}
+{{- else if ge $b 1e6 -}}{{ printf "%.0f MB" (div $b 1e6) }}
+{{- else if gt $b 0 -}}{{ printf "%.0f KB" (div $b 1e3) }}
+{{- else -}}-{{- end -}}

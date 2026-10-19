@@ -1,0 +1,114 @@
+{{- /* signet-report.json is mounted into assets by hugo.toml. */ -}}
+{{- $res := resources.Get "signet-report.json" -}}
+{{- if not $res -}}
+  {{- errorf "signet-report.json not found in the repo root. Generate it with: npm run json" -}}
+{{- end -}}
+{{- $doc := $res | transform.Unmarshal -}}
+
+{{- /* Matched against ProductType, in section order. Unmatched devices get a section named after their class. */ -}}
+{{- $families := slice
+  (dict "match" "^iPhone" "slug" "iphone" "name" "iPhone" "os" "iOS")
+  (dict "match" "^iPad" "slug" "ipad" "name" "iPad" "os" "iPadOS")
+  (dict "match" "^Watch" "slug" "watch" "name" "Apple Watch" "os" "watchOS")
+  (dict "match" "^(Mac|MacBook|Macmini|iMac|VirtualMac)" "slug" "mac" "name" "Mac" "os" "macOS")
+  (dict "match" "^AppleTV" "slug" "apple-tv" "name" "Apple TV" "os" "tvOS")
+  (dict "match" "^AudioAccessory" "slug" "homepod" "name" "HomePod" "os" "audioOS")
+  (dict "match" "^RealityDevice" "slug" "vision" "name" "Apple Vision" "os" "visionOS")
+  (dict "match" "^iPod" "slug" "ipod" "name" "iPod" "os" "iOS")
+  (dict "match" "^iBridge" "slug" "t2" "name" "Apple T2 Security Chip" "os" "bridgeOS")
+-}}
+
+{{- /* Invert IPSW -> devices into device -> IPSWs. */ -}}
+{{- $byDevice := newScratch -}}
+{{- range $doc.ipsws -}}
+  {{- $i := . -}}
+  {{- $released := "" }}{{ $mdm := "" }}{{ with $i.dates }}{{ $released = .released | default "" }}{{ $mdm = .mdm_expires | default "" }}{{ end -}}
+  {{- $fw := dict
+      "version" $i.version "build" $i.build "url" $i.url "size_bytes" $i.size_bytes "sha1" $i.sha1
+      "signing" ($i.signing | default "unknown") "released" $released "mdm_expires" $mdm
+      "window" ($i.signing_window | default dict)
+      "vkey" (partial "signet/vkey.html" $i.version) -}}
+  {{- range $i.devices }}{{ $byDevice.Add .identifier (slice $fw) }}{{ end -}}
+{{- end -}}
+
+{{- $stats := newScratch -}}
+{{- range $d := $doc.devices -}}
+  {{- $fam := dict -}}
+  {{- range $families }}{{ if and (not $fam) (findRE .match $d.identifier) }}{{ $fam = . }}{{ end }}{{ end -}}
+  {{- if not $fam -}}
+    {{- $cls := index (findRE "^[A-Za-z]+" $d.identifier) 0 | default "Other" -}}
+    {{- $fam = dict "slug" (lower $cls) "name" $cls "os" ($d.platform | default "") -}}
+  {{- end -}}
+
+  {{- $m := findRESubmatch `(\d+),(\d+)$` $d.identifier 1 -}}
+  {{- $rank := 0 }}{{ with $m }}{{ $rank = add (mul (int (index (index . 0) 1)) 1000) (int (index (index . 0) 2)) }}{{ end -}}
+
+  {{- $sorted := sort ($byDevice.Get $d.identifier | default slice) "vkey" "desc" -}}
+  {{- /* replaced_by: the next newer release with the same major version. The report has gaps across
+         majors (tvOS 11.4.1 -> 26.5), so no successor is claimed across them. */ -}}
+  {{- $ipsws := slice -}}
+  {{- range $n, $fw := $sorted -}}
+    {{- $next := dict -}}
+    {{- $major := index (split $fw.version ".") 0 -}}
+    {{- range $j, $x := $sorted }}{{ if and (lt $j $n) (gt $x.vkey $fw.vkey) (eq (index (split $x.version ".") 0) $major) }}{{ $next = $x }}{{ end }}{{ end -}}
+    {{- $ipsws = $ipsws | append (merge $fw (dict "replaced_by" $next)) -}}
+  {{- end -}}
+  {{- $ota := $d.ota_assets | default slice -}}
+  {{- $product := "" }}{{ with $d.tech_specs }}{{ $product = .product | default "" }}{{ end -}}
+  {{- $name := $d.name | default $product | default $d.identifier -}}
+  {{- $state := "unknown" }}{{ with $d.latest_in_feed }}{{ $state = .signing | default "unknown" }}{{ end -}}
+
+  {{- /* title is for search results and the browser tab; linkTitle is what the site shows. */ -}}
+  {{- $named := $name }}{{ if ne $name $d.identifier }}{{ $named = printf "%s (%s)" $name $d.identifier }}{{ end -}}
+  {{- $title := printf "%s firmware and OTA updates" $named -}}
+  {{- if $ipsws }}{{ $title = printf "%s IPSW downloads and signing status" $named }}{{ end -}}
+  {{- $desc := printf "%d IPSW download%s and %d OTA update%s for %s, linked straight to Apple."
+      (len $ipsws) (cond (eq (len $ipsws) 1) "" "s") (len $ota) (cond (eq (len $ota) 1) "" "s") $named -}}
+  {{- with $d.latest_in_feed -}}
+    {{- $verdict := index (dict "signed" "is signed" "unsigned" "is not signed") $state | default "has unknown signing status" -}}
+    {{- $desc = trim (printf "%s %s (%s) %s, checked with Apple's signing server. %s" $fam.os .version .build $verdict $desc) " " -}}
+  {{- end -}}
+
+  {{- $img := index ($d.images | default (slice "")) 0 -}}
+  {{- /* T2 has no product photo, so use the chip photo. */ -}}
+  {{- if and (not $img) (eq $fam.slug "t2") }}{{ with $d.chip }}{{ $img = .image | default "" }}{{ end }}{{ end -}}
+  {{- $device := merge $d (dict
+      "slug" (strings.Trim (replaceRE `[^a-z0-9]+` "-" (lower $d.identifier)) "-")
+      "family" $fam.slug "family_name" $fam.name "os" $fam.os
+      "rank" $rank "image" $img "state" $state
+      "latest" $d.latest_in_feed "ipsws" $ipsws "ota_assets" $ota) -}}
+
+  {{- $.AddPage (dict
+      "path"    (printf "%s/%s" $fam.slug $device.slug)
+      "title"   $title
+      "linkTitle" $name
+      "description" $desc
+      "dates"   (dict "lastmod" (time $doc.generated_at))
+      "layout"  "device"
+      "weight"  (sub 1000000 $rank)
+      "params"  (dict "device" $device "generated_at" $doc.generated_at)
+  ) -}}
+
+  {{- $f := $stats.Get $fam.slug | default (dict "slug" $fam.slug "name" $fam.name "devices" 0 "ipsws" 0 "ota" 0 "signed" 0 "unsigned" 0 "unknown" 0 "image" "" "image_rank" -1) -}}
+  {{- $f = merge $f (dict "devices" (add $f.devices 1) "ipsws" (add $f.ipsws (len $ipsws)) "ota" (add $f.ota (len $ota)) $state (add (index $f $state) 1)) -}}
+  {{- if and $device.image (gt $rank $f.image_rank) }}{{ $f = merge $f (dict "image" $device.image "image_rank" $rank) }}{{ end -}}
+  {{- $stats.Set $fam.slug $f -}}
+{{- end -}}
+
+{{- /* Sections follow $families order; unmatched ones go last. */ -}}
+{{- range $slug, $f := $stats.Values -}}
+  {{- $w := 99 }}{{ range $i, $x := $families }}{{ if eq $x.slug $slug }}{{ $w = add $i 1 }}{{ end }}{{ end -}}
+  {{- $.AddPage (dict
+      "kind"   "section"
+      "path"   $slug
+      "title"  (printf "%s IPSW downloads and signing status" $f.name)
+      "linkTitle" $f.name
+      "description" (printf "Which %s firmware Apple is signing right now: %d models, %d signed, checked with Apple's signing server. IPSW and OTA downloads link straight to Apple."
+          $f.name $f.devices $f.signed)
+      "dates"  (dict "lastmod" (time $doc.generated_at))
+      "layout" "family"
+      "weight" $w
+      "menus"  (dict "main" (dict "weight" $w))
+      "params" (dict "family" $f "generated_at" $doc.generated_at)
+  ) -}}
+{{- end -}}

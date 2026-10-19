@@ -1,0 +1,8 @@
+{{- /* Args: "state" (signed, unsigned, unknown), optional "size" (sm, lg). */ -}}
+{{- $s := .state | default "unknown" -}}
+{{- $badges := dict
+  "signed"   (slice "Signed" `<path d="M6.4 11.2 3.2 8l1.1-1.1 2.1 2.1 5.3-5.3L12.8 4.8z" fill="currentColor"/>`)
+  "unsigned" (slice "Not signed" `<path d="M4.5 3.4 8 6.9l3.5-3.5 1.1 1.1L9.1 8l3.5 3.5-1.1 1.1L8 9.1l-3.5 3.5-1.1-1.1L6.9 8 3.4 4.5z" fill="currentColor"/>`)
+  "unknown"  (slice "Unknown" `<circle cx="8" cy="8" r="2.5" fill="currentColor"/>`) -}}
+{{- $b := index $badges $s | default $badges.unknown -}}
+<span class="sg-badge sg-badge--{{ $s }}{{ with .size }} sg-badge--{{ . }}{{ end }}"><svg viewBox="0 0 16 16" aria-hidden="true">{{ index $b 1 | safeHTML }}</svg><span>{{ index $b 0 }}</span></span>

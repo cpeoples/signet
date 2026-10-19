@@ -1,0 +1,100 @@
+name: docs
+
+# Builds the report from Apple's servers, renders the Hugo site and deploys it to GitHub Pages.
+# Runs hourly as well as on pushes, because signing status changes without any code change.
+# Pull requests build the site but don't deploy it.
+#
+# signet-history.json (when each build was first and last seen signed) and the Tech Specs and board
+# caches are kept between runs in the Actions cache. A missing cache only means the history starts
+# over; the next run rebuilds the caches.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  HUGO_VERSION: "0.167.0"
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install Hugo extended
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz" -o "$RUNNER_TEMP/hugo.tar.gz"
+          tar -xzf "$RUNNER_TEMP/hugo.tar.gz" -C "$RUNNER_TEMP" hugo
+          sudo install "$RUNNER_TEMP/hugo" /usr/local/bin/hugo
+          hugo version
+
+      - run: npm ci
+
+      # Each run saves a new cache entry; the newest one is restored.
+      - name: Restore history and caches
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            signet-history.json
+            apple-techspecs.json
+            apple-boards.json
+          key: signet-state-${{ github.run_id }}
+          restore-keys: signet-state-
+
+      - name: Build the report
+        run: npm run json
+
+      - name: Save history and caches
+        if: github.event_name != 'pull_request'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            signet-history.json
+            apple-techspecs.json
+            apple-boards.json
+          key: signet-state-${{ github.run_id }}
+
+      - name: Build the site
+        run: npm run site:render
+
+      - uses: actions/upload-pages-artifact@v5
+        if: github.event_name != 'pull_request'
+        with:
+          path: site/public
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

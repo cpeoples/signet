@@ -1,0 +1,2 @@
+# Test fixtures are binary; never convert line endings (Windows checkouts would corrupt them).
+test/fixtures/** binary

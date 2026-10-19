@@ -1,0 +1,46 @@
+{{ define "main" }}
+{{- $f := .Params.family -}}
+<main id="content" class="sg-main">
+  <div class="sg-wrap">
+    <nav class="sg-crumbs" aria-label="Breadcrumb">
+      <a href="{{ site.Home.RelPermalink }}">{{ site.Title }}</a><span aria-hidden="true">/</span>
+      <span aria-current="page">{{ .LinkTitle }}</span>
+    </nav>
+    <header class="sg-pagehead">
+      <div>
+        <h1>{{ .LinkTitle }}</h1>
+        <p class="sg-muted">{{ $f.devices }} models · {{ $f.ipsws }} IPSW files · {{ $f.ota }} OTA updates · checked with Apple {{ partial "signet/ago.html" .Params.generated_at }}</p>
+      </div>
+      <div class="sg-filter" role="group" aria-label="Filter devices">
+        <input type="search" placeholder="Filter {{ .LinkTitle }}…" data-sg-filter aria-label="Filter by name or model">
+        <div class="sg-seg">
+          <button type="button" aria-pressed="true" data-sg-state="all">All</button>
+          <button type="button" aria-pressed="false" data-sg-state="signed">Signed</button>
+          <button type="button" aria-pressed="false" data-sg-state="unsigned">Not signed</button>
+        </div>
+      </div>
+    </header>
+
+    <ul class="sg-grid" data-sg-grid>
+      {{- range .Pages.ByWeight }}{{ $d := .Params.device }}
+      <li data-sg-name="{{ lower (printf "%s %s %s" .LinkTitle $d.identifier ($d.board | default "")) }}" data-sg-signing="{{ $d.state }}">
+        <a class="sg-card" href="{{ .RelPermalink }}">
+          <div class="sg-card__img">{{ with $d.image }}<img src="{{ . }}" alt="" loading="lazy" decoding="async">{{ else }}<span class="sg-card__ph">{{ substr $d.identifier 0 1 }}</span>{{ end }}</div>
+          <div class="sg-card__body">
+            <h2>{{ .LinkTitle }}</h2>
+            <p class="sg-mono">{{ $d.identifier }}{{ with $d.board }} · {{ . }}{{ end }}</p>
+            {{- with $d.latest }}
+            <p class="sg-card__fw">{{ $d.os }} {{ .version }} <span class="sg-mono">({{ .build }})</span></p>
+            {{- else }}
+            <p>OTA updates only</p>
+            {{- end }}
+          </div>
+          {{ partial "signet/badge.html" (dict "state" $d.state) }}
+        </a>
+      </li>
+      {{- end }}
+    </ul>
+    <p class="sg-empty" data-sg-empty hidden>No {{ .LinkTitle }} models match.</p>
+  </div>
+</main>
+{{ end }}

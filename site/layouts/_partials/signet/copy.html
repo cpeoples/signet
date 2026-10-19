@@ -1,0 +1,11 @@
+{{- /* Args: "value", "label" (default "Copy"), "show" (print a shortened value next to the label). */ -}}
+{{- $v := .value -}}
+{{- $label := .label | default "Copy" -}}
+<button type="button" class="sg-copy" data-copy="{{ $v }}"
+  aria-label="Copy {{ $label }}: {{ $v }}">
+  <span class="sg-copy__label">{{ $label }}</span>
+  {{- if .show }}<code class="sg-copy__val">{{ cond (gt (len $v) 18) (printf "%s…%s" (substr $v 0 8) (substr $v -6)) $v }}</code>{{ end -}}
+  <svg class="sg-copy__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 1.75A1.75 1.75 0 0 1 6.75 0h6.5A1.75 1.75 0 0 1 15 1.75v8.5A1.75 1.75 0 0 1 13.25 12h-6.5A1.75 1.75 0 0 1 5 10.25zm1.75-.25a.25.25 0 0 0-.25.25v8.5c0 .14.11.25.25.25h6.5a.25.25 0 0 0 .25-.25v-8.5a.25.25 0 0 0-.25-.25zM1 5.75A1.75 1.75 0 0 1 2.75 4H3.5v1.5h-.75a.25.25 0 0 0-.25.25v8.5c0 .14.11.25.25.25h6.5a.25.25 0 0 0 .25-.25v-.75H11v.75A1.75 1.75 0 0 1 9.25 16h-6.5A1.75 1.75 0 0 1 1 14.25z" fill="currentColor"/></svg>
+  <svg class="sg-copy__done" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.4 11.2 3.2 8l1.1-1.1 2.1 2.1 5.3-5.3L12.8 4.8z" fill="currentColor"/></svg>
+  <span class="sg-tip" role="tooltip"><span class="sg-tip__head">{{ $label }} · click to copy</span><code>{{ $v }}</code></span>
+</button>

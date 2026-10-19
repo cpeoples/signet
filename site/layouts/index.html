@@ -1,0 +1,66 @@
+{{ define "main" }}
+{{- $families := where site.Sections "Params.family" "!=" nil -}}
+{{- $devices := 0 }}{{ $signed := 0 }}{{ $ipsw := 0 }}{{ $ota := 0 }}{{ $checked := "" -}}
+{{- range $families -}}
+  {{- $f := .Params.family -}}
+  {{- $devices = add $devices $f.devices -}}{{- $signed = add $signed $f.signed -}}
+  {{- $ipsw = add $ipsw $f.ipsws -}}{{- $ota = add $ota $f.ota -}}{{- $checked = .Params.generated_at -}}
+{{- end -}}
+
+<main id="content" class="sg-main">
+  <section class="sg-hero">
+    <div class="sg-wrap">
+      <p class="sg-live"><span class="sg-live__dot" aria-hidden="true"></span>Checked with Apple {{ partial "signet/ago.html" $checked }}</p>
+      <h1 class="sg-hero__title">Is it signed?<br><span>Answers come from Apple, not a database.</span></h1>
+      <p class="sg-hero__lede">Signet asks Apple's own signing server about every iPhone, iPad, Mac, Apple Watch, Apple TV, HomePod and Vision Pro firmware, and links every download straight to Apple.</p>
+      <button type="button" class="sg-searchbar" data-search-open aria-label="Search devices">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8.5 3a5.5 5.5 0 0 1 4.38 8.82l3.65 3.65-1.06 1.06-3.65-3.65A5.5 5.5 0 1 1 8.5 3zm0 1.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" fill="currentColor"/></svg>
+        <span>Search a device, model number or build&hellip;</span><kbd>/</kbd>
+      </button>
+      <dl class="sg-stats">
+        <div><dt>Devices</dt><dd>{{ lang.FormatNumber 0 $devices }}</dd></div>
+        <div><dt>Signed right now</dt><dd class="sg-stats__ok">{{ lang.FormatNumber 0 $signed }}</dd></div>
+        <div><dt>IPSW files</dt><dd>{{ lang.FormatNumber 0 $ipsw }}</dd></div>
+        <div><dt>OTA updates</dt><dd>{{ lang.FormatNumber 0 $ota }}</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="sg-wrap sg-section" aria-labelledby="families">
+    <h2 id="families" class="sg-h2">Choose your device</h2>
+    <div class="sg-families">
+      {{- range $families.ByWeight }}{{ $f := .Params.family }}
+      <a class="sg-family" href="{{ .RelPermalink }}">
+        <div class="sg-family__img">{{ with $f.image }}<img src="{{ . }}" alt="" loading="lazy" decoding="async">{{ end }}</div>
+        <div class="sg-family__body">
+          <h3>{{ .LinkTitle }}</h3>
+          <p>{{ $f.devices }} models · <span class="sg-ok">{{ $f.signed }} signed</span></p>
+        </div>
+        <span class="sg-family__arrow" aria-hidden="true">&rarr;</span>
+      </a>
+      {{- end }}
+    </div>
+  </section>
+
+  <section class="sg-wrap sg-section" aria-labelledby="trust">
+    <h2 id="trust" class="sg-h2">Every answer comes from Apple</h2>
+    <div class="sg-trust">
+      <div class="sg-trust__item">
+        <span class="sg-trust__num">1</span>
+        <h3>Signing status from Apple</h3>
+        <p>For each firmware, Signet sends a signing request to <code>gs.apple.com</code>. If Apple returns a signature, it's <b>signed</b>. Nobody types that in by hand.</p>
+      </div>
+      <div class="sg-trust__item">
+        <span class="sg-trust__num">2</span>
+        <h3>Firmware lists from Apple</h3>
+        <p>IPSW and OTA lists come from Apple's update servers (<code>mesu.apple.com</code>, <code>gdmf.apple.com</code>). Board, chip and display details come from the firmware itself.</p>
+      </div>
+      <div class="sg-trust__item">
+        <span class="sg-trust__num">3</span>
+        <h3>Downloads straight from Apple</h3>
+        <p>Download buttons point to <code>updates.cdn-apple.com</code>. Signet never hosts, changes or proxies a file. Check the SHA-1 on each page against your download.</p>
+      </div>
+    </div>
+  </section>
+</main>
+{{ end }}

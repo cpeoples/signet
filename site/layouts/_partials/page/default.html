@@ -1,0 +1,23 @@
+{{- /*
+  Default layout body — workshop content pages and section landings.
+  No `layout` key in front matter. Front-matter contract:
+  docs/authoring/01-front-matter#page-layouts.
+
+  No auto-cards fallback: section landings without body content render
+  an empty body. Use `layout = "chapter"` or author cards in the body
+  via the `children` or `cards` shortcode.
+*/ -}}
+{{ partial "nav/breadcrumb.html" . }}
+
+{{- /* Suppress eyebrow when .CurrentSection IS the page (section landings),
+       which would otherwise duplicate the H1. */ -}}
+{{ with .CurrentSection }}{{ if and (not .IsHome) (ne .RelPermalink $.RelPermalink) }}
+  <p class="eyebrow">{{ .Title }}</p>
+{{ end }}{{ end }}
+<h1>{{ .Title }}</h1>
+
+{{ with .Description }}<p class="lead">{{ . }}</p>{{ end }}
+
+{{ partial "workshop/workshop-meta.html" . }}
+
+{{ .Content }}

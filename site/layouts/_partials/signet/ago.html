@@ -1,0 +1,6 @@
+{{- /* Absolute UTC time; signet.js rewrites it as "4 minutes ago". */ -}}
+{{- with . -}}
+{{- $t := time.AsTime . -}}
+{{- $abs := $t.UTC.Format "Jan 2, 2006 15:04 UTC" -}}
+<time datetime="{{ $t.Format "2006-01-02T15:04:05Z07:00" }}" data-signet-ago title="{{ $abs }}">{{ $abs }}</time>
+{{- end -}}

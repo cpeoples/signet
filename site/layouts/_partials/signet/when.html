@@ -1,0 +1,28 @@
+{{- /*
+  Signing history note. Apple publishes no end date, so for unsigned builds use, in order: the window
+  Signet observed, the replacing release, the release date, Signet's first check.
+  Args: "fw" (IPSW entry), "os", "long" (sentence form for the status card).
+*/ -}}
+{{- $fw := .fw }}{{ $w := $fw.window | default dict }}{{ $next := $fw.replaced_by | default dict -}}
+{{- $fmt := site.Params.dateFormat -}}
+{{- if eq $fw.signing "unsigned" -}}
+<span class="sg-when">
+  {{- if and $w.unsigned_detected_at $w.last_seen_signed -}}
+    {{ if .long }}Apple stopped signing it between {{ else }}Stopped {{ end -}}
+    <time datetime="{{ $w.last_seen_signed }}">{{ time.Format $fmt $w.last_seen_signed }}</time> and <time datetime="{{ $w.unsigned_detected_at }}">{{ time.Format $fmt $w.unsigned_detected_at }}</time>{{ if .long }}, observed by Signet's checks{{ end }}.
+  {{- else if $next.version -}}
+    Replaced by {{ .os }} {{ $next.version }}{{ with $next.released }} on {{ time.Format $fmt . }}{{ end }}.
+    {{- with $w.first_checked }} Unsigned since Signet's first check, {{ time.Format $fmt . }}.{{ end -}}
+  {{- else if $fw.released -}}
+    No longer signed. Released {{ time.Format $fmt $fw.released }}.
+  {{- else if $w.first_checked -}}
+    Unsigned since Signet's first check, {{ time.Format $fmt $w.first_checked }}.
+  {{- end -}}
+</span>
+{{- else if eq $fw.signing "signed" -}}
+<span class="sg-when">
+  {{- if $fw.released }}Signed since release, {{ time.Format $fmt $fw.released }}.
+  {{- else if $w.observed_signed_since }}Signed in every check since {{ time.Format $fmt $w.observed_signed_since }}.{{ end -}}
+  {{- with $fw.mdm_expires }} <span class="sg-mdm" title="gdmf.apple.com ExpirationDate. Apple can stop signing sooner, usually a week or two after the next release.">Apple lists it until {{ time.Format $fmt . }}.</span>{{ end -}}
+</span>
+{{- end -}}

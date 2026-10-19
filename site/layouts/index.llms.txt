@@ -1,0 +1,26 @@
+{{- $families := where site.Sections "Params.family" "!=" nil -}}
+{{- $checked := "" }}{{ range first 1 $families }}{{ $checked = .Params.generated_at }}{{ end -}}
+# {{ site.Title }}
+
+> {{ site.Params.description | plainify }}
+
+Every answer comes from Apple's own servers: signing status from `gs.apple.com`, firmware lists from `mesu.apple.com` and `gdmf.apple.com`, and downloads that link to Apple. Last checked {{ $checked }}.
+
+## Guides
+{{ range where site.RegularPages "Params.device" "==" nil }}
+- [{{ .LinkTitle }}]({{ .Permalink }}){{ with .Description }}: {{ . }}{{ end }}
+{{- end }}
+- [Search index (JSON)]({{ (site.Home.OutputFormats.Get "json").Permalink }}): every device with its latest firmware, build and signing status.
+- [Source code](https://github.com/cpeoples/signet): the signet CLI that builds this site.
+- [@chrispeoples/aea](https://www.npmjs.com/package/@chrispeoples/aea): decrypt the encrypted (`.aea`) OTA updates listed here.
+
+## Devices
+{{ range $families.ByWeight }}
+- [{{ .LinkTitle }}]({{ .Permalink }}): {{ .Description }}
+{{- end }}
+{{ range $families.ByWeight }}
+### {{ .LinkTitle }}
+{{ range .Pages.ByWeight }}{{ $d := .Params.device }}
+- [{{ .LinkTitle }}{{ if ne .LinkTitle $d.identifier }} ({{ $d.identifier }}){{ end }}]({{ .Permalink }}): {{ with $d.latest }}{{ $d.os }} {{ .version }} ({{ .build }}), {{ index (dict "signed" "signed" "unsigned" "not signed") $d.state | default "signing unknown" }}{{ else }}no IPSW in Apple's feed{{ end }}
+{{- end }}
+{{ end -}}

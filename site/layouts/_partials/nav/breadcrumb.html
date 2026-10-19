@@ -1,0 +1,15 @@
+{{- /* Home → Ancestors → current page. Plain text only — markdownify on
+       numbered titles like "1. Verify Agent" emits `<ol><li>...</li></ol>`
+       inside the link and breaks the inline DOM. */ -}}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="{{ partial "site-href.html" "/" }}">{{ i18n "home" }}</a>
+  {{- $pages := .Ancestors.Reverse -}}
+  {{- range $pages -}}
+    {{- if not .IsHome }}
+      <span class="breadcrumb__sep">/</span>
+      <a href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
+    {{- end -}}
+  {{- end -}}
+  <span class="breadcrumb__sep">/</span>
+  <span aria-current="page">{{ .LinkTitle }}</span>
+</nav>

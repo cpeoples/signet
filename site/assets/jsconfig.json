@@ -1,0 +1,9 @@
+{
+ "compilerOptions": {
+  "paths": {
+   "*": [
+    "../themes/splunk-workshop/assets/*"
+   ]
+  }
+ }
+}

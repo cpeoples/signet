@@ -1,0 +1,23 @@
+{{- /* Search index for assets/js/search.js. Families are shown while the query is empty. */ -}}
+{{- $devices := slice }}{{ $families := slice }}{{ $pages := slice }}{{ $badges := dict -}}
+{{- range $p := site.RegularPages -}}
+  {{- with $p.Params.device -}}
+    {{- $d := . -}}
+    {{- $v := "" }}{{ $bd := "" -}}
+    {{- with $d.latest }}{{ $v = printf "%s %s" $d.os .version }}{{ $bd = .build }}{{ end -}}
+    {{- $devices = $devices | append (dict
+        "t" $p.LinkTitle "u" $p.RelPermalink "i" $d.identifier "b" ($d.board | default "")
+        "f" $d.family_name "img" ($d.image | default "") "v" $v "bd" $bd "s" $d.state "r" $d.rank) -}}
+  {{- else -}}
+    {{- $pages = $pages | append (dict "t" $p.LinkTitle "u" $p.RelPermalink "d" ($p.Description | default "")) -}}
+  {{- end -}}
+{{- end -}}
+{{- range $sec := site.Sections.ByWeight -}}
+  {{- with $sec.Params.family -}}
+    {{- $families = $families | append (dict "t" .name "u" $sec.RelPermalink "n" .devices "s" .signed) -}}
+  {{- end -}}
+{{- end -}}
+{{- range slice "signed" "unsigned" "unknown" -}}
+  {{- $badges = merge $badges (dict . (partial "signet/badge.html" (dict "state" . "size" "sm"))) -}}
+{{- end -}}
+{{- dict "devices" $devices "families" $families "pages" $pages "badges" $badges | jsonify -}}

@@ -1,0 +1,27 @@
+node_modules/
+dist/
+build-test/
+*.tsbuildinfo
+*.tgz
+npm-debug.log*
+
+# Hugo output, wherever it's run from
+.hugo_build.lock
+/public/
+site/public/
+site/resources/_gen/
+
+# Generated at runtime from Apple's servers
+signet-report.json
+signet-history.json
+apple-boards.json
+apple-techspecs.json
+
+# Firmware downloaded or decrypted at the repo root (test fixtures live in packages/aea/test/fixtures)
+/*.aea
+/*.aar
+/*.ipsw
+/*.zip
+
+.env
+.DS_Store

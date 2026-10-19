@@ -1,0 +1,34 @@
+{
+  "name": "signet",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Every Apple firmware, its signing status, downloads and device specs, from Apple's own servers (feeds, IPSW contents, gs.apple.com TSS, gdmf).",
+  "type": "module",
+  "workspaces": [
+    "packages/aea"
+  ],
+  "bin": {
+    "signet": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "npm run build -w @chrispeoples/aea && tsc",
+    "test": "npm test -w @chrispeoples/aea",
+    "start": "node dist/cli.js",
+    "json": "npm run build --silent && node dist/cli.js --json --history signet-history.json > signet-report.json && echo 'Wrote signet-report.json (history: signet-history.json)'",
+    "site:data": "npm run json",
+    "site:dev": "test -f signet-report.json || npm run json; hugo server -s site",
+    "site:build": "npm run json && hugo --gc --minify -s site",
+    "site:render": "hugo --gc --minify -s site"
+  },
+  "engines": {
+    "node": ">=24.5"
+  },
+  "dependencies": {
+    "@chrispeoples/aea": "^0.1.0",
+    "plist": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.6.0"
+  }
+}

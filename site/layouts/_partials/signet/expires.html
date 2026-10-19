@@ -1,0 +1,25 @@
+{{- /* Expires cell. Signed: gdmf.apple.com ExpirationDate. Unsigned: when Signet saw signing end. Args: "fw". */ -}}
+{{- $fw := .fw }}{{ $w := $fw.window | default dict -}}
+{{- $fmt := site.Params.dateFormat -}}
+{{- if and (eq $fw.signing "signed") $fw.mdm_expires -}}
+  <span class="sg-hastip sg-exp" tabindex="0">
+    <time datetime="{{ $fw.mdm_expires }}">{{ time.Format $fmt $fw.mdm_expires }}</time>
+    <span class="sg-tip sg-tip--left" role="tooltip">
+      <span class="sg-tip__head">Apple's listed expiration</span>
+      <span class="sg-tip__body">Apple's update server (gdmf.apple.com) lists this build until {{ time.Format site.Params.dateFormatLong $fw.mdm_expires }}. Apple can stop signing it sooner, usually a week or two after the next release.</span>
+    </span>
+  </span>
+{{- else if and (eq $fw.signing "unsigned") $w.unsigned_detected_at -}}
+  {{- $ended := time.Format $fmt $w.unsigned_detected_at -}}
+  <span class="sg-hastip sg-exp sg-exp--ended" tabindex="0">
+    Ended <time datetime="{{ $w.unsigned_detected_at }}">{{ $ended }}</time>
+    <span class="sg-tip sg-tip--left" role="tooltip">
+      <span class="sg-tip__head">Observed by Signet</span>
+      <span class="sg-tip__body">Signed on {{ time.Format $fmt $w.last_seen_signed }}, unsigned on {{ $ended }}.</span>
+    </span>
+  </span>
+{{- else if eq $fw.signing "unsigned" -}}
+  <span class="sg-muted">Expired</span>
+{{- else -}}
+  <span class="sg-muted">-</span>
+{{- end -}}

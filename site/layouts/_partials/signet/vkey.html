@@ -1,0 +1,7 @@
+{{- /* "17.4.1" -> 17004001, so versions sort numerically. */ -}}
+{{- $k := 0 -}}
+{{- range $i, $p := first 3 (split (. | default "0") ".") -}}
+  {{- $n := int (replaceRE `\D.*$` "" $p | default "0") -}}
+  {{- $k = add $k (mul $n (index (slice 1000000 1000 1) $i)) -}}
+{{- end -}}
+{{- return $k -}}

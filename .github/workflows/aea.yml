@@ -1,0 +1,81 @@
+name: aea
+
+# Tests packages/aea. No path filter, so the "required" job always reports and can be a required
+# status check. Also called by aea-release.yml before publishing.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aea-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: packages/aea
+    shell: bash
+
+jobs:
+  test:
+    name: test (${{ matrix.os }}, node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      # The lockfile is the workspace root's; npm ci here resolves and installs the whole workspace.
+      - run: npm ci
+
+      # Type-checks src and tests. On macOS this includes parity tests against Apple's aea and aa.
+      - run: npm test
+
+      # What npm would publish, checked on every PR (no login needed).
+      - name: Publish dry run
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 24
+        run: npm run build && npm publish --dry-run --ignore-scripts
+
+      - name: Packed tarball installs and runs
+        run: |
+          npm pack --pack-destination "$RUNNER_TEMP"
+          mkdir "$RUNNER_TEMP/consumer" && cd "$RUNNER_TEMP/consumer"
+          npm init -y > /dev/null
+          npm install --no-audit --no-fund "$RUNNER_TEMP"/chrispeoples-aea-*.tgz
+          npx --no-install signet-aea --version
+          node --input-type=module -e "import { decryptFileChunks } from '@chrispeoples/aea'; if (typeof decryptFileChunks !== 'function') process.exit(1);"
+          npx --no-install signet-aea extract "$GITHUB_WORKSPACE/packages/aea/test/fixtures/tree.aea" \
+            --key-file "$GITHUB_WORKSPACE/packages/aea/test/fixtures/key.txt" -d out
+          test -f out/dir/corpus.bin
+
+  required:
+    name: required
+    if: always()
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All test jobs passed
+        working-directory: .
+        run: |
+          if [ "${{ needs.test.result }}" != "success" ]; then
+            echo "::error::aea tests did not pass (result: ${{ needs.test.result }})"
+            exit 1
+          fi

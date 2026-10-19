@@ -1,0 +1,199 @@
+{{ define "main" }}
+{{- $d := .Params.device -}}
+{{- $l := $d.latest -}}
+{{- $s := $d.state -}}
+{{- $ts := $d.tech_specs -}}
+{{- $fs := $d.firmware_specs -}}
+<main id="content" class="sg-main">
+  <div class="sg-wrap">
+    <nav class="sg-crumbs" aria-label="Breadcrumb">
+      <a href="{{ site.Home.RelPermalink }}">{{ site.Title }}</a><span aria-hidden="true">/</span>
+      <a href="{{ .Parent.RelPermalink }}">{{ .Parent.LinkTitle }}</a><span aria-hidden="true">/</span>
+      <span aria-current="page">{{ .LinkTitle }}</span>
+    </nav>
+
+    <header class="sg-device">
+      <div class="sg-device__img">{{ with $d.image }}<img src="{{ . }}" alt="{{ $.LinkTitle }}" decoding="async">{{ end }}</div>
+      <div class="sg-device__meta">
+        <h1>{{ .LinkTitle }}</h1>
+        <ul class="sg-chips">
+          <li><span>Model</span><code>{{ $d.identifier }}</code></li>
+          {{ with $d.board }}<li><span>Board</span><code>{{ . }}</code></li>{{ end }}
+          {{ with $ts }}{{ with .year_introduced }}<li><span>Introduced</span><code>{{ . }}</code></li>{{ end }}{{ end }}
+          {{ with $fs }}{{ with .soc }}{{ with .platform }}<li><span>SoC</span><code>{{ upper . }}</code></li>{{ end }}{{ end }}{{ end }}
+          {{ with $d.chip }}<li><span>Chip</span><code>Apple {{ .name }}</code></li>{{ end }}
+        </ul>
+      </div>
+    </header>
+
+    <section class="sg-status sg-status--{{ $s }}" aria-label="Signing status">
+      {{- with $l }}
+      <div class="sg-status__main">
+        {{ partial "signet/badge.html" (dict "state" $s "size" "lg") }}
+        <h2>
+          {{ $d.os }} {{ .version }} <span class="sg-mono">({{ .build }})</span>
+          {{ index (dict "signed" "is signed" "unsigned" "is not signed") $s | default "status unknown" }}
+        </h2>
+        <p>
+          {{- index (dict
+              "signed" "Apple's signing server is signing this firmware, so you can restore or update to it now."
+              "unsigned" "Apple has stopped signing this firmware, so it can't be installed.") $s
+            | default "Apple's signing server didn't give a clear answer for this build." }}
+          Checked with Apple {{ partial "signet/ago.html" $.Params.generated_at }}.
+        </p>
+        {{- with where $d.ipsws "build" .build }}{{ with partial "signet/when.html" (dict "fw" (index . 0) "os" $d.os "long" true) }}<p class="sg-when-p">{{ . }}</p>{{ end }}{{ end }}
+        {{ with .dates }}{{ with .released }}<p class="sg-muted">Released {{ time.Format site.Params.dateFormatLong . }}</p>{{ end }}{{ end }}
+      </div>
+      {{- with .url }}
+      <div class="sg-status__dl">
+        <a class="sg-btn sg-btn--primary" href="{{ . }}" rel="noopener">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M9.25 3h1.5v8.19l2.97-2.97 1.06 1.06L10 14.06 5.22 9.28l1.06-1.06 2.97 2.97zM4 15.5h12V17H4z" fill="currentColor"/></svg>
+          Download IPSW <span>{{ partial "signet/bytes.html" $l.size_bytes }}</span>
+        </a>
+        <p class="sg-status__src">From <b>{{ (urls.Parse .).Host }}</b> (Apple). Signet never hosts files.</p>
+        {{ with $l.sha1 }}<p class="sg-hash">{{ partial "signet/copy.html" (dict "value" . "label" "SHA-1" "show" true) }}</p>{{ end }}
+      </div>
+      {{- end }}
+      {{- else }}
+      <div class="sg-status__main">
+        {{ partial "signet/badge.html" (dict "state" $s "size" "lg") }}
+        <h2>No IPSW for this device</h2>
+        <p>Apple only ships this device's software as over-the-air updates. They're listed below.</p>
+      </div>
+      {{- end }}
+    </section>
+
+    {{- with $d.ipsws }}
+    {{- $off := where . "signing" "unsigned" }}
+    {{- $tipHead := dict "signed" "Signed by Apple" "unsigned" "No longer signed" "unknown" "Status unknown" }}
+    <section class="sg-section" aria-labelledby="ipsw">
+      <h2 id="ipsw" class="sg-h2">Restore images (IPSW) <span class="sg-count">{{ len . }}</span></h2>
+      {{- with $off }}
+      <p class="sg-muted sg-lead">{{ len . }} older {{ cond (eq (len .) 1) "release is" "releases are" }} no longer signed. Apple still hosts the files, but a device can't restore to them.</p>
+      {{- end }}
+      <div class="sg-table-wrap">
+        <table class="sg-table">
+          <thead><tr><th>Version</th><th>Released</th><th>Status</th><th>Expires</th><th class="sg-r">Size</th><th></th></tr></thead>
+          <tbody>
+          {{- range . }}
+            <tr class="sg-row--{{ .signing }}">
+              <td><b>{{ $d.os }} {{ .version }}</b> <span class="sg-mono sg-muted">{{ .build }}</span></td>
+              <td class="sg-muted">{{ with .released }}{{ time.Format site.Params.dateFormat . }}{{ else }}-{{ end }}</td>
+              <td>
+                {{- $tip := partial "signet/when.html" (dict "fw" . "os" $d.os "long" true) }}
+                <span class="sg-hastip" tabindex="0">
+                  {{ partial "signet/badge.html" (dict "state" .signing "size" "sm") }}
+                  <span class="sg-tip sg-tip--left" role="tooltip">
+                    <span class="sg-tip__head">{{ index $tipHead .signing }}</span>
+                    <span class="sg-tip__body">{{ with $tip }}{{ . }} {{ end }}Apple doesn't publish signing end dates; Signet records them by checking on a schedule.</span>
+                  </span>
+                </span>
+              </td>
+              <td>{{ partial "signet/expires.html" (dict "fw" .) }}</td>
+              <td class="sg-r sg-mono">{{ partial "signet/bytes.html" .size_bytes }}</td>
+              <td class="sg-r"><div class="sg-actions">
+                {{ with .sha1 }}{{ partial "signet/copy.html" (dict "value" . "label" "SHA-1") }}{{ end }}
+                <a class="sg-btn sg-btn--sm" href="{{ .url }}" rel="noopener"
+                  {{- if eq .signing "unsigned" }} title="Apple no longer signs this build, so it can't be installed"{{ end }}>Download</a></div>
+              </td>
+            </tr>
+          {{- end }}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {{- end }}
+
+    {{- with $d.ota_assets }}
+    <section class="sg-section" aria-labelledby="ota">
+      <h2 id="ota" class="sg-h2">Over-the-air updates <span class="sg-count">{{ len . }}</span></h2>
+      <p class="sg-muted sg-lead">The exact packages Apple's update server offers this device. Encrypted (<code>.aea</code>) packages list the key Apple publishes with them.</p>
+      <div class="sg-table-wrap">
+        <table class="sg-table">
+          <thead><tr><th>Version</th><th>Type</th><th class="sg-r">Size</th><th>Package</th><th></th></tr></thead>
+          <tbody>
+          {{- range . }}
+            <tr>
+              <td><b>{{ $d.os }} {{ .version }}</b> <span class="sg-mono sg-muted">{{ .build }}</span></td>
+              <td>{{ if eq .type "delta" }}Update from <span class="sg-mono">{{ .prerequisite_build }}</span>{{ else }}Full{{ end }}</td>
+              <td class="sg-r sg-mono">{{ partial "signet/bytes.html" .size_bytes }}</td>
+              <td>{{ if .encrypted }}<span class="sg-tag">Encrypted .aea</span>{{ else }}<span class="sg-tag sg-tag--plain">.zip</span>{{ end }}</td>
+              <td class="sg-r"><div class="sg-actions">
+                {{ with .decryption_key }}{{ partial "signet/copy.html" (dict "value" . "label" "Key") }}{{ end }}
+                <a class="sg-btn sg-btn--sm" href="{{ .url }}" rel="noopener">Download</a></div>
+              </td>
+            </tr>
+          {{- end }}
+          </tbody>
+        </table>
+      </div>
+      {{- with where . "encrypted" true }}
+      {{- $a := index . 0 }}{{ $file := path.Base $a.url }}
+      {{- $cmd := printf "aea decrypt -i %s -o %s.aar -key-value 'base64:%s'" $file (strings.TrimSuffix ".aea" $file) $a.decryption_key }}
+      <details class="sg-howto">
+        <summary>How to decrypt an .aea package</summary>
+        <p>On macOS 13 or later, Apple's own <code>aea</code> tool does it. Each row's <b>Key</b> button copies that package's key. For the newest package, the whole command is:</p>
+        <div class="sg-cmd">
+          <pre><code>{{ $cmd }}</code></pre>
+          {{ partial "signet/copy.html" (dict "value" $cmd "label" "Command") }}
+        </div>
+      </details>
+      {{- end }}
+    </section>
+    {{- end }}
+
+    {{- if or $ts $fs }}
+    <section class="sg-section" aria-labelledby="specs">
+      <h2 id="specs" class="sg-h2">Specifications</h2>
+      <div class="sg-specs">
+        {{- with $ts }}
+        {{- $rows := slice
+            (slice "Chip" .chip) (slice "Capacity" .capacity) (slice "Display" .display)
+            (slice "Rear camera" .rear_camera) (slice "Front camera" .front_camera) (slice "Camera" .camera)
+            (slice "Video" .video) (slice "Battery" .battery) (slice "Charging" .charging) (slice "Ports" .ports)
+            (slice "Wireless" .wireless) (slice "SIM" .sim) (slice "Sensors" .sensors)
+            (slice "Water resistance" .water_resistance) (slice "Size & weight" .size) (slice "Colors" .colors) }}
+        <dl class="sg-spec">
+          {{- range $rows }}{{ $label := index . 0 }}{{ with index . 1 }}
+          <div><dt>{{ $label }}</dt>
+            <dd>{{ if reflect.IsSlice . }}<ul>{{ range . }}<li>{{ . }}</li>{{ end }}</ul>{{ else }}{{ . }}{{ end }}</dd></div>
+          {{- end }}{{ end }}
+        </dl>
+        {{- with .url }}<p class="sg-muted sg-src">Source: <a href="{{ . }}" rel="noopener">Apple Tech Specs</a></p>{{ end }}
+        {{- end }}
+
+        {{- with $fs }}
+        <aside class="sg-fw">
+          {{- with $d.chip }}{{ if .image }}{{ $c := . }}
+          <figure class="sg-chip">
+            <img src="{{ $c.image }}" alt="Apple {{ $c.name }} chip" loading="lazy" decoding="async">
+            <figcaption>
+              <b>Apple {{ $c.name }}</b>
+              <span>Photo: <a href="{{ $c.file_url }}" rel="noopener">{{ $c.artist | default "Wikimedia Commons" }}</a>
+                {{- with $c.license }}, {{ if $c.license_url }}<a href="{{ $c.license_url }}" rel="noopener license">{{ . }}</a>{{ else }}{{ . }}{{ end }}{{ end }}, via Wikimedia Commons</span>
+            </figcaption>
+          </figure>
+          {{- end }}{{ end }}
+          <h3>From the firmware</h3>
+          <p class="sg-muted">Read from the device tree inside Apple's firmware.</p>
+          <dl>
+            {{ with .soc }}
+              {{ with .cpu_cores }}<div><dt>CPU</dt><dd>{{ . }} cores{{ with $fs.soc.performance_cores }} ({{ . }}P + {{ $fs.soc.efficiency_cores }}E){{ end }}</dd></div>{{ end }}
+              {{ with .metal_family }}<div><dt>GPU</dt><dd>Metal {{ . }}</dd></div>{{ end }}
+              {{ with .memory_class }}<div><dt>Memory</dt><dd>{{ . }} GB class</dd></div>{{ end }}
+              {{ with .chip_id }}<div><dt>Chip ID</dt><dd class="sg-mono">{{ . }}</dd></div>{{ end }}
+            {{ end }}
+            {{ with .display }}{{ if or .gamut .oled }}<div><dt>Display</dt><dd>{{ if .oled }}OLED{{ if .gamut }} · {{ end }}{{ end }}{{ .gamut }}{{ with .scale }} · @{{ . }}x{{ end }}</dd></div>{{ end }}{{ end }}
+            {{ with .microphones }}<div><dt>Microphones</dt><dd>{{ . }}</dd></div>{{ end }}
+            {{ with .radios }}<div><dt>Radios</dt><dd>{{ if .cellular }}Cellular{{ if .esim }} · eSIM{{ end }} · {{ end }}Wi-Fi{{ with .wifi_chipset }} ({{ . }}){{ end }}</dd></div>{{ end }}
+            {{ with .predecessor }}<div><dt>Successor of</dt><dd class="sg-mono">{{ . }}</dd></div>{{ end }}
+          </dl>
+          {{ with .features }}<ul class="sg-feat">{{ range . }}<li>{{ replace . "_" " " }}</li>{{ end }}</ul>{{ end }}
+        </aside>
+        {{- end }}
+      </div>
+    </section>
+    {{- end }}
+  </div>
+</main>
+{{ end }}

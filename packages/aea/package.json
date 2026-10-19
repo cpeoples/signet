@@ -1,0 +1,64 @@
+{
+  "name": "@chrispeoples/aea",
+  "version": "0.1.0",
+  "description": "Decrypt Apple Encrypted Archives (.aea) and extract Apple Archives (.aar) on any OS. Pure Node.js, no dependencies.",
+  "keywords": [
+    "apple",
+    "aea",
+    "aar",
+    "apple-archive",
+    "apple-encrypted-archive",
+    "ota",
+    "ipsw",
+    "lzfse",
+    "lzvn",
+    "lz4"
+  ],
+  "license": "MIT",
+  "author": "Chris Peoples",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cpeoples/signet.git",
+    "directory": "packages/aea"
+  },
+  "homepage": "https://github.com/cpeoples/signet/tree/main/packages/aea#readme",
+  "bugs": {
+    "url": "https://github.com/cpeoples/signet/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "signet-aea": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit",
+    "test": "tsc -p tsconfig.test.json && node scripts/run-tests.mjs",
+    "fixtures": "sh scripts/make-fixtures.sh",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm test"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}

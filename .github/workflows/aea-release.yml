@@ -1,0 +1,105 @@
+name: aea release
+
+# Publishes @chrispeoples/aea to npm when an "aea-v<version>" tag is pushed, after the full test matrix
+# passes. Uses npm trusted publishing (OIDC), so no npm token is stored. Configure it once on
+# npmjs.com under the package's Settings, Trusted publishing: repository cpeoples/signet, workflow
+# aea-release.yml, environment npm, with "npm publish" allowed.
+#
+# npm can't set up trusted publishing for a package that doesn't exist yet, so the first release
+# uses a short-lived npm token stored as the NPM_TOKEN secret of the npm environment. npm tries
+# OIDC first and falls back to the token. Delete the secret once trusted publishing is configured.
+#
+# To release, bump "version" in packages/aea/package.json, merge, then push the tag:
+#   git tag aea-v1.2.3 && git push origin aea-v1.2.3
+# Prerelease versions (1.2.3-beta.1) are published under the "next" dist-tag.
+
+on:
+  push:
+    tags: ["aea-v*"]
+  # Dry run from any branch: everything except the publish, so a broken release workflow is found
+  # before a version tag (which can't be moved or deleted) is pushed.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aea-release
+  cancel-in-progress: false
+
+jobs:
+  test:
+    uses: ./.github/workflows/aea.yml
+
+  # Runs alongside the tests and before the npm environment's approval, so a bad tag, a version
+  # that's already on npm or a package npm would reject fails here.
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      dist_tag: ${{ steps.version.outputs.dist_tag }}
+    defaults:
+      run:
+        working-directory: packages/aea
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Check the version
+        id: version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$version" != "${GITHUB_REF_NAME#aea-v}" ]; then
+            echo "::error::tag $GITHUB_REF_NAME doesn't match package.json version $version"
+            exit 1
+          fi
+          if npm view "@chrispeoples/aea@$version" version --registry=https://registry.npmjs.org > /dev/null 2>&1; then
+            echo "::error::@chrispeoples/aea@$version is already on npm; bump the version"
+            exit 1
+          fi
+          case "$version" in *-*) tag=next ;; *) tag=latest ;; esac
+          echo "dist_tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Would publish @chrispeoples/aea@$version with dist-tag $tag" >> "$GITHUB_STEP_SUMMARY"
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Publish dry run
+        run: npm publish --dry-run --ignore-scripts --tag "${{ steps.version.outputs.dist_tag }}"
+
+  publish:
+    needs: [test, preflight]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write # OIDC token for trusted publishing and provenance
+    defaults:
+      run:
+        working-directory: packages/aea
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24 # its npm (11.5.1+) supports trusted publishing
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      # Runs in packages/aea, so only @chrispeoples/aea is published. Access and provenance come from
+      # publishConfig; prepublishOnly runs the tests again.
+      - run: npm publish --tag "${{ needs.preflight.outputs.dist_tag }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # first release only; empty once trusted publishing is set up

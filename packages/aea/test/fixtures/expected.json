@@ -1,0 +1,119 @@
+{
+  "corpus": {
+    "size": 141506,
+    "sha256": "19293cddcfe3652a3f072f679c89e0371d816e66b57ad676e2e0e4a77f06bff7"
+  },
+  "multi": {
+    "size": 4915200,
+    "sha256": "8f82e3fd80881e3ecdab7dd2f1f09bd0c3815ab95399431f5c20d18b7de42e75"
+  },
+  "tree": [
+    {
+      "path": "dangling",
+      "mode": 493,
+      "mtime": 1704182645,
+      "type": "L",
+      "link": "does/not/exist"
+    },
+    {
+      "path": "dir",
+      "mode": 493,
+      "mtime": 1704182645,
+      "type": "D"
+    },
+    {
+      "path": "dir/corpus.bin",
+      "mode": 420,
+      "mtime": 1704182645,
+      "type": "F",
+      "size": 141506,
+      "sha256": "19293cddcfe3652a3f072f679c89e0371d816e66b57ad676e2e0e4a77f06bff7"
+    },
+    {
+      "path": "dir/link-up",
+      "mode": 493,
+      "mtime": 1704182645,
+      "type": "L",
+      "link": "../hello.txt"
+    },
+    {
+      "path": "dir/nested",
+      "mode": 493,
+      "mtime": 1704182645,
+      "type": "D"
+    },
+    {
+      "path": "dir/nested/deeper",
+      "mode": 493,
+      "mtime": 1704182645,
+      "type": "D"
+    },
+    {
+      "path": "dir/nested/deeper/file",
+      "mode": 420,
+      "mtime": 1704182645,
+      "type": "F",
+      "size": 5,
+      "sha256": "64896f89fd11190013b70103e603a1c5826e56b7fb7d2197ab279b0690043599"
+    },
+    {
+      "path": "dir/nested/readonly.txt",
+      "mode": 292,
+      "mtime": 1704182645,
+      "type": "F",
+      "size": 10,
+      "sha256": "28dc50ce2c559549546af000e2a606f45a45dac10f91bcefc7b21b9555ca1334"
+    },
+    {
+      "path": "dir/run.sh",
+      "mode": 493,
+      "mtime": 1704182645,
+      "type": "F",
+      "size": 18,
+      "sha256": "299001868fb8c02fd431c336c6d058f5558c5dff5b5af5e6fe04b870a6a9cbba"
+    },
+    {
+      "path": "empty",
+      "mode": 420,
+      "mtime": 1704182645,
+      "type": "F",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "empty-dir",
+      "mode": 493,
+      "mtime": 1704182645,
+      "type": "D"
+    },
+    {
+      "path": "hello.txt",
+      "mode": 420,
+      "mtime": 1704182645,
+      "type": "F",
+      "size": 6,
+      "sha256": "5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03"
+    },
+    {
+      "path": "link-to-hello",
+      "mode": 493,
+      "mtime": 1704182645,
+      "type": "L",
+      "link": "hello.txt"
+    },
+    {
+      "path": "ünïcødé",
+      "mode": 493,
+      "mtime": 1704182645,
+      "type": "D"
+    },
+    {
+      "path": "ünïcødé/fïlé.txt",
+      "mode": 420,
+      "mtime": 1704182645,
+      "type": "F",
+      "size": 7,
+      "sha256": "e5264d078fbcb924b76df386117def39a612066f2790708d85e36d6d9a924ae0"
+    }
+  ]
+}

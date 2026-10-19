@@ -1,0 +1,3 @@
+[submodule "site/themes/splunk-workshop"]
+	path = site/themes/splunk-workshop
+	url = https://github.com/splunk/hugo-theme-splunk-workshop.git

@@ -1,0 +1,46 @@
+{
+  "feeds": {
+    "ios": "https://itunes.apple.com/WebObjects/MZStore.woa/wa/com.apple.jingle.appserver.client.MZITunesClientCheck/version",
+    "macos": "https://mesu.apple.com/assets/macos/com_apple_macOSIPSW/com_apple_macOSIPSW.xml",
+    "visionos": "https://mesu.apple.com/assets/visionos/com_apple_visionOSIPSW/com_apple_visionOSIPSW.xml",
+    "bridgeos": "https://mesu.apple.com/assets/bridgeos/com_apple_bridgeOSIPSW/com_apple_bridgeOSIPSW.xml"
+  },
+  "tss_url": "http://gs.apple.com/TSS/controller?action=2",
+  "gdmf_url": "https://gdmf.apple.com/v2/pmv",
+  "apple_root_ca": {
+    "url": "https://www.apple.com/appleca/AppleIncRootCertificate.cer",
+    "sha256": "B0:B1:73:0E:CB:C7:FF:45:05:14:2C:49:F1:29:5E:6E:DA:6B:CA:ED:7E:2C:68:C5:BE:91:B5:A1:10:01:F0:24"
+  },
+  "user_agent": "signet/1.0 (+https://github.com/cpeoples/signet)",
+  "tss_user_agent": "InetURL/1.0",
+  "http": {
+    "timeout_ms": 60000,
+    "retries": 4
+  },
+  "jobs": 12,
+  "appledb": {
+    "enabled": true,
+    "url": "https://api.appledb.dev/ios/{os};{build}.json",
+    "index_url": "https://api.appledb.dev/ios/{os}/index.json",
+    "os_for_prefix": { "Watch": "watchOS", "AppleTV": "tvOS", "AudioAccessory": "audioOS" },
+    "allowed_hosts": ["updates.cdn-apple.com", "appldnld.apple.com"]
+  },
+  "ota": {
+    "enabled": true,
+    "url": "https://gdmf.apple.com/v2/assets",
+    "audiences": {
+      "AppleTV": "356d9da0-eee4-4c6c-bbe5-99b60eadddf0",
+      "Watch": "b82fcf9c-c284-41c9-8eb2-e69bf5a5269f"
+    },
+    "from_version": "18.0",
+    "from_build": "22J357",
+    "from": { "Watch": ["4.0", "15R372"] },
+    "needs_board": ["Watch"],
+    "board_catalogs": ["https://mesu.apple.com/assets/watch/com_apple_MobileAsset_SoftwareUpdate/com_apple_MobileAsset_SoftwareUpdate.xml"],
+    "boards_cache": "apple-boards.json"
+  },
+  "techspecs": {
+    "enabled": true,
+    "cache": "apple-techspecs.json"
+  }
+}

@@ -1,0 +1,79 @@
+baseURL = "https://cpeoples.github.io/signet/"
+locale = "en-us"
+title = "Signet"
+theme = "splunk-workshop"
+enableRobotsTXT = true
+disableKinds = ["taxonomy", "term"]
+
+# Device and family pages come from ../signet-report.json (npm run json), via content/_content.gotmpl.
+[module]
+  [[module.mounts]]
+    source = "assets"
+    target = "assets"
+  [[module.mounts]]
+    source = "../signet-report.json"
+    target = "assets/signet-report.json"
+
+[outputFormats.llms]
+  mediaType = "text/plain"
+  baseName = "llms"
+  isPlainText = true
+  notAlternative = true
+
+[outputs]
+  home = ["HTML", "JSON", "llms"]
+  section = ["HTML"]
+  page = ["HTML"]
+
+[params]
+  brandName    = "Signet"
+  brandTagline = "apple firmware signing"
+  description  = "Which Apple firmware is still signed: IPSW downloads, signing status from Apple's signing server and OTA updates for every iPhone, iPad, Mac, Apple Watch, Apple TV, HomePod and Vision Pro. Downloads link to Apple."
+  copyright    = "&copy; {year} Signet. Not affiliated with Apple Inc. Apple, iPhone, iPad, Mac and Apple Watch are trademarks of Apple Inc."
+  logoLight    = ""
+  logoDark     = ""
+  favicon      = "favicon.svg"
+
+  dateFormat     = "Jan 2, 2006"
+  dateFormatLong = "January 2, 2006"
+
+  heroBackgroundLight = ""
+  heroBackgroundDark  = ""
+  defaultMode     = "auto"
+  showThemeToggle = true
+  showSidebar     = false
+  showToc         = false
+  showProgress    = false
+  showLightTrails = false
+  contentMaxWidth = "1160px"
+
+  colorAccent         = "#0A6CFF"
+  colorAccent2        = "#00A3A3"
+  colorAccent3        = "#0A6CFF"
+  colorAccentDark     = "#0050C7"
+  colorAccentText     = "#0050C7"
+  colorAccentTextDark = "#6EA8FF"
+  colorInk            = "#0B1220"
+  colorInkMuted       = "#5A6475"
+  colorPaper          = "#FFFFFF"
+  colorSurface        = "#F5F7FA"
+  colorSurfaceAlt     = "#EBEFF5"
+  colorBorder         = "#E2E7EF"
+  colorBorderStrong   = "#C9D1DE"
+  colorInkDark          = "#EEF2F8"
+  colorInkMutedDark     = "#98A2B3"
+  colorPaperDark        = "#0A0F1A"
+  colorSurfaceDark      = "#111827"
+  colorSurfaceAltDark   = "#172133"
+  colorBorderDark       = "#1E293B"
+  colorBorderStrongDark = "#2B3A52"
+
+  fontUrl     = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+  fontDisplay = "'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+  fontBody    = "'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+  fontMono    = "'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Monaco, Consolas, monospace"
+
+[[menus.main]]
+  name = "How it works"
+  pageRef = "/about"
+  weight = 100
