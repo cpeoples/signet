@@ -51,6 +51,7 @@ export function safeComponents(p: string): string[] {
   const parts = p.split(isWindows ? /[\\/]/ : "/").filter((s) => s !== "" && s !== ".");
   for (const s of parts) {
     if (s === "..") throw new ArchiveError(`unsafe path ${JSON.stringify(p)}: ".." isn't allowed`);
+    // eslint-disable-next-line no-control-regex -- control characters are exactly what's rejected
     if (isWindows && /[<>:"|?*\x00-\x1f]/.test(s))
       throw new ArchiveError(`path ${JSON.stringify(p)} contains characters Windows doesn't allow in file names`);
   }
