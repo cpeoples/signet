@@ -5,6 +5,7 @@
 {{- if hugo.IsProduction }}{{ $js = $js | resources.Fingerprint }}{{ end }}
 <script src="{{ $js.RelPermalink }}" defer></script>
 <meta name="color-scheme" content="light dark">
+<meta name="google-site-verification" content="ZwtXu4I3Awbxnd1dDpGjRBlCxxOHHW5Eplsw6rG8ujs" />
 <link rel="canonical" href="{{ .Permalink }}">
 <meta property="og:site_name" content="{{ site.Title }}">
 {{- $img := "" }}{{ with .Params.device }}{{ $img = .image }}{{ end }}{{ with .Params.family }}{{ $img = .image }}{{ end }}
