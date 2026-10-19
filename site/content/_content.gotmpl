@@ -44,14 +44,20 @@
   {{- $rank := 0 }}{{ with $m }}{{ $rank = add (mul (int (index (index . 0) 1)) 1000) (int (index (index . 0) 2)) }}{{ end -}}
 
   {{- $sorted := sort ($byDevice.Get $d.identifier | default slice) "vkey" "desc" -}}
-  {{- /* replaced_by: the next newer release with the same major version. The report has gaps across
-         majors (tvOS 11.4.1 -> 26.5), so no successor is claimed across them. */ -}}
+  {{- /* replaced_by: the closest newer release with the same major version, else with the next major
+         (tvOS 26.6 -> 27.0). The report has gaps across majors (tvOS 11.4.1 -> 26.5), so nothing
+         further is claimed as a successor. */ -}}
   {{- $ipsws := slice -}}
   {{- range $n, $fw := $sorted -}}
-    {{- $next := dict -}}
-    {{- $major := index (split $fw.version ".") 0 -}}
-    {{- range $j, $x := $sorted }}{{ if and (lt $j $n) (gt $x.vkey $fw.vkey) (eq (index (split $x.version ".") 0) $major) }}{{ $next = $x }}{{ end }}{{ end -}}
-    {{- $ipsws = $ipsws | append (merge $fw (dict "replaced_by" $next)) -}}
+    {{- $next := dict }}{{ $up := dict -}}
+    {{- $major := int (index (split $fw.version ".") 0) -}}
+    {{- range $j, $x := $sorted -}}
+      {{- if and (lt $j $n) (gt $x.vkey $fw.vkey) -}}
+        {{- $m := int (index (split $x.version ".") 0) -}}
+        {{- if eq $m $major }}{{ $next = $x }}{{ else if eq $m (add $major 1) }}{{ $up = $x }}{{ end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $ipsws = $ipsws | append (merge $fw (dict "replaced_by" ($next | default $up))) -}}
   {{- end -}}
   {{- $ota := $d.ota_assets | default slice -}}
   {{- $product := "" }}{{ with $d.tech_specs }}{{ $product = .product | default "" }}{{ end -}}
