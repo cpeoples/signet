@@ -49,10 +49,15 @@ jobs:
       # Type-checks src and tests. On macOS this includes parity tests against Apple's aea and aa.
       - run: npm test
 
-      # What npm would publish, checked on every PR (no login needed).
+      # What npm would publish, checked on every PR (no login needed). npm refuses a version that's
+      # already on npm even in a dry run, so this packs a throwaway prerelease of the current version;
+      # aea-release.yml checks the real version.
       - name: Publish dry run
         if: matrix.os == 'ubuntu-latest' && matrix.node == 24
-        run: npm run build && npm publish --dry-run --ignore-scripts
+        run: |
+          npm version --no-git-tag-version "$(node -p "require('./package.json').version")-ci.$GITHUB_RUN_ID"
+          npm run build && npm publish --dry-run --ignore-scripts --tag ci
+          git checkout package.json ../../package-lock.json
 
       - name: Packed tarball installs and runs
         run: |
