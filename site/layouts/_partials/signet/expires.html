@@ -28,7 +28,7 @@
   {{- with $w.first_checked }}{{ if and $est (gt $est (time .)) }}{{ $est = time . }}{{ end }}{{ end -}}
   {{- if $est -}}
   <span class="sg-hastip sg-exp sg-exp--ended" tabindex="0">
-    <span>About <time datetime="{{ $est.Format "2006-01-02" }}">{{ $est.Format $fmt }}</time></span>
+    <span>~<time datetime="{{ $est.Format "2006-01-02" }}">{{ $est.Format $fmt }}</time></span>
     <span class="sg-tip sg-tip--left" role="tooltip">
       <span class="sg-tip__head">Estimated</span>
       <span class="sg-tip__body">Apple doesn't publish when it stops signing a build. {{ $.os }} {{ $next.version }} replaced it on {{ time.Format $fmt $next.released }}, and Apple usually stops signing the older build a week later.
